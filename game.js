@@ -39,18 +39,18 @@ const SCENES=["forest","ruins","volcano"];
 
 // Per-animal GLTF tuning
 const MODEL_CONFIG={
-  Bull:        {scale:0.9, yOffset:0, rotation:Math.PI},
-  Stag:        {scale:0.9, yOffset:0, rotation:Math.PI},
-  Husky:       {scale:1.1, yOffset:0, rotation:Math.PI},
-  Wolf:        {scale:1.1, yOffset:0, rotation:Math.PI},
-  Deer:        {scale:0.9, yOffset:0, rotation:Math.PI},
-  Horse:       {scale:0.85, yOffset:0, rotation:Math.PI},
-  Shibalnu:    {scale:1.2, yOffset:0, rotation:Math.PI},
-  Donkey:      {scale:0.95, yOffset:0, rotation:Math.PI},
-  Cow:         {scale:0.9, yOffset:0, rotation:Math.PI},
-  Horse_White: {scale:0.85, yOffset:0, rotation:Math.PI},
-  Fox:         {scale:1.2, yOffset:0, rotation:Math.PI},
-  Alpaca:      {scale:0.9, yOffset:0, rotation:Math.PI}
+  Bull:        {scale:0.9, yOffset:0, rotation:0},
+  Stag:        {scale:0.9, yOffset:0, rotation:0},
+  Husky:       {scale:1.1, yOffset:0, rotation:0},
+  Wolf:        {scale:1.1, yOffset:0, rotation:0},
+  Deer:        {scale:0.9, yOffset:0, rotation:0},
+  Horse:       {scale:0.85, yOffset:0, rotation:0},
+  Shibalnu:    {scale:1.2, yOffset:0, rotation:0},
+  Donkey:      {scale:0.95, yOffset:0, rotation:0},
+  Cow:         {scale:0.9, yOffset:0, rotation:0},
+  Horse_White: {scale:0.85, yOffset:0, rotation:0},
+  Fox:         {scale:1.2, yOffset:0, rotation:0},
+  Alpaca:      {scale:0.9, yOffset:0, rotation:0}
 };
 
 // ══════════ Difficulty Scaling ══════════
@@ -203,6 +203,10 @@ async function getAnimal(type){
     mesh.userData.mixer=mixer;
     mesh.userData.clips={};
     mesh.userData.actions={};
+    
+    // Log available animations for debugging
+    console.log(`[${type}] Available animations:`,animations.map(c=>c.name));
+    
     animations.forEach(clip=>{
       const n=clip.name.toLowerCase();
       // Map Quaternius animal pack names to our states
@@ -213,12 +217,15 @@ async function getAnimal(type){
       if(n.includes('gallop')||n==='gallop')mesh.userData.clips.gallop=clip;
       if(n.includes('idle')&&!mesh.userData.clips.idle)mesh.userData.clips.idle=clip;
     });
+    
     // Fallback: if no walk, use idle, or first clip
     if(!mesh.userData.clips.walk)mesh.userData.clips.walk=mesh.userData.clips.idle||animations[0];
     if(!mesh.userData.clips.attack)mesh.userData.clips.attack=mesh.userData.clips.walk;
     if(!mesh.userData.clips.jump)mesh.userData.clips.jump=mesh.userData.clips.walk;
     if(!mesh.userData.clips.death)mesh.userData.clips.death=mesh.userData.clips.walk;
     if(!mesh.userData.clips.gallop)mesh.userData.clips.gallop=mesh.userData.clips.walk;
+    
+    console.log(`[${type}] Mapped clips:`,Object.keys(mesh.userData.clips));
   }
   mesh.userData.type=type;
   return mesh;
