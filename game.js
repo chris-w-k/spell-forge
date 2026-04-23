@@ -39,18 +39,18 @@ const SCENES=["forest","ruins","volcano"];
 
 // Per-animal GLTF tuning
 const MODEL_CONFIG={
-  Bull:        {scale:0.9, yOffset:0, rotation:0},
-  Stag:        {scale:0.9, yOffset:0, rotation:0},
-  Husky:       {scale:1.1, yOffset:0, rotation:0},
-  Wolf:        {scale:1.1, yOffset:0, rotation:0},
-  Deer:        {scale:0.9, yOffset:0, rotation:0},
-  Horse:       {scale:0.85, yOffset:0, rotation:0},
-  Shibalnu:    {scale:1.2, yOffset:0, rotation:0},
-  Donkey:      {scale:0.95, yOffset:0, rotation:0},
-  Cow:         {scale:0.9, yOffset:0, rotation:0},
-  Horse_White: {scale:0.85, yOffset:0, rotation:0},
-  Fox:         {scale:1.2, yOffset:0, rotation:0},
-  Alpaca:      {scale:0.9, yOffset:0, rotation:0}
+  Bull:        {scale:0.6, yOffset:-0.2, rotation:0},
+  Stag:        {scale:0.6, yOffset:-0.2, rotation:0},
+  Husky:       {scale:0.7, yOffset:-0.15, rotation:0},
+  Wolf:        {scale:0.7, yOffset:-0.15, rotation:0},
+  Deer:        {scale:0.6, yOffset:-0.2, rotation:0},
+  Horse:       {scale:0.55, yOffset:-0.25, rotation:0},
+  Shibalnu:    {scale:0.75, yOffset:-0.1, rotation:0},
+  Donkey:      {scale:0.6, yOffset:-0.2, rotation:0},
+  Cow:         {scale:0.6, yOffset:-0.2, rotation:0},
+  Horse_White: {scale:0.55, yOffset:-0.25, rotation:0},
+  Fox:         {scale:0.75, yOffset:-0.1, rotation:0},
+  Alpaca:      {scale:0.6, yOffset:-0.2, rotation:0}
 };
 
 // ══════════ Difficulty Scaling ══════════
@@ -123,8 +123,8 @@ function initThree(){
   const w=400,h=340;
   scene=new THREE.Scene();
   camera=new THREE.PerspectiveCamera(38,w/h,0.1,100);
-  camera.position.set(0,1.7,5.5);
-  camera.lookAt(0,1.0,0);
+  camera.position.set(0,1.5,7);  // Moved back from 5.5 to 7, lowered from 1.7 to 1.5
+  camera.lookAt(0,0.8,0);  // Look slightly lower
   renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
   renderer.setSize(w,h);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
@@ -500,9 +500,9 @@ function animate(){
   // Shake
   if(shakeAmount>0){
     camera.position.x=(Math.random()-.5)*shakeAmount;
-    camera.position.y=1.7+(Math.random()-.5)*shakeAmount*.5;
+    camera.position.y=1.5+(Math.random()-.5)*shakeAmount*.5;
     shakeAmount*=0.85;
-    if(shakeAmount<0.01){shakeAmount=0;camera.position.x=0;camera.position.y=1.7}
+    if(shakeAmount<0.01){shakeAmount=0;camera.position.x=0;camera.position.y=1.5}
   }
   // Scene particles
   sceneGroup.children.forEach(c=>{
