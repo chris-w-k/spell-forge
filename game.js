@@ -5,7 +5,6 @@
 // ═══════════════════════════════════════════════════════════════
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { SkeletonUtils } from 'three/addons/utils/SkeletonUtils.js';
 
 // ══════════ Dictionary ══════════
 const BASIC="the,and,for,are,but,not,you,all,can,had,her,was,one,our,out,day,get,has,him,his,how,man,new,now,old,see,two,way,who,boy,did,its,let,put,say,she,too,use,bag,end,fed,set,sit,ten,win,yet,bed,big,box,bus,buy,cat,cup,cut,dad,dog,ear,eat,egg,eye,fan,far,fat,fit,fly,fun,gas,god,got,gun,hat,hit,hot,job,kid,law,lot,low,may,men,met,mix,mom,mud,nut,pan,pay,pet,pig,pop,red,run,sad,sat,sea,six,son,sun,tax,tea,toe,top,toy,try,war,wet,why,yes,zoo";
@@ -174,19 +173,11 @@ function convertMaterials(mesh){
 }
 
 async function loadGLTF(type){
-  if(modelCache[type]){
-    // Use SkeletonUtils to properly clone animated meshes with skeletons
-    const original=modelCache[type];
-    const cloned=SkeletonUtils.clone(original.scene);
-    return {scene:cloned,animations:original.animations};
-  }
+  // Don't cache - load fresh each time to avoid skeleton binding issues
   const path=`./Models/Animals/${type}.gltf`;
   const gltf=await gltfLoader.loadAsync(path);
   convertMaterials(gltf.scene);
-  modelCache[type]=gltf;
-  // Return a SkeletonUtils clone, not the original
-  const cloned=SkeletonUtils.clone(gltf.scene);
-  return {scene:cloned,animations:gltf.animations};
+  return {scene:gltf.scene,animations:gltf.animations};
 }
 
 async function getAnimal(type){
@@ -892,15 +883,11 @@ function renderBattle(){
 // ══════════ Preload + Boot ══════════
 async function preloadAll(){
   const updateStatus=(txt)=>{const el=document.getElementById('ltext');if(el)el.textContent=txt};
-  const types=ANIMALS.map(a=>a.type);
-  // Unique types only
-  const uniqueTypes=[...new Set(types)];
+  
   try{
-    for(let i=0;i<uniqueTypes.length;i++){
-      const type=uniqueTypes[i];
-      updateStatus(`Summoning ${type}… (${i+1}/${uniqueTypes.length})`);
-      await loadGLTF(type);
-    }
+    // Just verify one animal loads to confirm the path is correct
+    updateStatus('Testing animal models...');
+    await loadGLTF('Bull');
     updateStatus('Ready to slap!');
     const btn=document.getElementById('playBtn');
     if(btn){btn.disabled=false;btn.textContent='▶ START SLAPPING'}
