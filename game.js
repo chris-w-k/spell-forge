@@ -2,8 +2,8 @@
 // Spell Forge — Word RPG v4 (with GLTF models)
 // ═══════════════════════════════════════════════════════════════
 
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // ══════════ Dictionary ══════════
 const BASIC="the,and,for,are,but,not,you,all,can,had,her,was,one,our,out,day,get,has,him,his,how,man,new,now,old,see,two,way,who,boy,did,its,let,put,say,she,too,use,bag,ben,end,fed,set,sit,ten,win,yet,bed,big,box,bus,buy,cat,cup,cut,dad,dog,ear,eat,egg,eye,fan,far,fat,fit,fly,fun,gas,god,got,gun,hat,hit,hot,job,kid,law,let,lot,low,may,men,met,mix,mom,mud,nut,pan,pay,pet,pig,pop,red,run,sad,sat,sea,sex,sit,six,son,sun,tax,tea,toe,top,toy,try,war,way,wet,why,win,yes,yet,zoo";
