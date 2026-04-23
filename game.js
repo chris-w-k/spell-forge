@@ -497,7 +497,11 @@ function animate(){
     const a=currentActions.jump;
     if(a&&!a.isRunning()){setMonsterState('idle')}
   }
-  // Position bobbing only when idle (since most animal walk anims are in-place)
+  // Subtle idle movement: slight rotation sway (the walk anim plays, but add gentle sway)
+  if(mesh&&animState.mode==='idle'){
+    const config=MODEL_CONFIG[mesh.userData.type]||{rotation:0};
+    mesh.rotation.y=config.rotation+Math.sin(t*0.8)*0.12;
+  }
   // Slap hand update
   updateSlapHand(dt);
   // Shake
