@@ -2,7 +2,7 @@
 // Spell Forge — Word RPG v4 (with GLTF models)
 // ═══════════════════════════════════════════════════════════════
 
-import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 
 // ══════════ Dictionary ══════════
