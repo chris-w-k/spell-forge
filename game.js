@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { SkeletonUtils } from 'three/addons/utils/SkeletonUtils.js';
 
 // ══════════ Dictionary ══════════
 const BASIC="the,and,for,are,but,not,you,all,can,had,her,was,one,our,out,day,get,has,him,his,how,man,new,now,old,see,two,way,who,boy,did,its,let,put,say,she,too,use,bag,end,fed,set,sit,ten,win,yet,bed,big,box,bus,buy,cat,cup,cut,dad,dog,ear,eat,egg,eye,fan,far,fat,fit,fly,fun,gas,god,got,gun,hat,hit,hot,job,kid,law,lot,low,may,men,met,mix,mom,mud,nut,pan,pay,pet,pig,pop,red,run,sad,sat,sea,six,son,sun,tax,tea,toe,top,toy,try,war,wet,why,yes,zoo";
@@ -174,17 +175,18 @@ function convertMaterials(mesh){
 
 async function loadGLTF(type){
   if(modelCache[type]){
-    // Deep clone and preserve skeleton animation rig
+    // Use SkeletonUtils to properly clone animated meshes with skeletons
     const original=modelCache[type];
-    // Use SkeletonUtils-free approach: just clone the scene and create a new mixer against the clone
-    const cloned=original.scene.clone(true);
+    const cloned=SkeletonUtils.clone(original.scene);
     return {scene:cloned,animations:original.animations};
   }
   const path=`./Models/Animals/${type}.gltf`;
   const gltf=await gltfLoader.loadAsync(path);
   convertMaterials(gltf.scene);
   modelCache[type]=gltf;
-  return {scene:gltf.scene.clone(true),animations:gltf.animations};
+  // Return a SkeletonUtils clone, not the original
+  const cloned=SkeletonUtils.clone(gltf.scene);
+  return {scene:cloned,animations:gltf.animations};
 }
 
 async function getAnimal(type){
