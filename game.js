@@ -234,9 +234,24 @@ async function getAnimal(type){
 // ══════════ Animation state machine ══════════
 function playAnimalAnim(name,loop=true,fade=0.2){
   const mesh=animalGroup.userData.mesh;
-  if(!mesh||!mesh.userData.mixer||!mesh.userData.clips[name])return null;
+  if(!mesh){
+    console.warn('[playAnimalAnim] No mesh in animalGroup');
+    return null;
+  }
+  if(!mesh.userData.mixer){
+    console.warn('[playAnimalAnim] Mesh has no mixer');
+    return null;
+  }
+  if(!mesh.userData.clips[name]){
+    console.warn(`[playAnimalAnim] No clip found for "${name}". Available:`,Object.keys(mesh.userData.clips));
+    return null;
+  }
+  
   const mixer=mesh.userData.mixer;
   const clip=mesh.userData.clips[name];
+  
+  console.log(`[playAnimalAnim] Playing "${name}" (loop=${loop}, fade=${fade})`);
+  
   // Stop current actions with fade
   Object.values(currentActions).forEach(a=>a.fadeOut(fade));
   const action=mixer.clipAction(clip);
@@ -246,10 +261,13 @@ function playAnimalAnim(name,loop=true,fade=0.2){
   action.fadeIn(fade);
   action.play();
   currentActions={[name]:action};
+  
+  console.log(`[playAnimalAnim] Action started, isRunning=${action.isRunning()}`);
   return action;
 }
 
 function setMonsterState(newState){
+  console.log('[setMonsterState] Switching to:',newState);
   animState.mode=newState;
   if(newState==='idle'){
     playAnimalAnim('walk',true);
@@ -448,8 +466,13 @@ async function spawnAnimal(type){
   mesh.position.set(0,mesh.position.y,0);
   animalGroup.add(mesh);
   animalGroup.userData.mesh=mesh;
+  // Ensure mixer is set globally
+  if(mesh.userData.mixer){
+    currentMixer=mesh.userData.mixer;
+  }
   // Start with walk loop
   setMonsterState('idle');
+  console.log('[spawnAnimal] Started idle animation for',type);
 }
 function activeReset(){
   currentActions={};
