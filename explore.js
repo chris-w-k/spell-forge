@@ -41,10 +41,14 @@ export class ExploreMode {
   }
   
   initScene() {
+    console.log('[Explore] initScene starting...');
+    
     // Camera - first person
     const frame = document.getElementById('frame');
     const w = frame ? frame.clientWidth : 800;
     const h = frame ? frame.clientHeight : 600;
+    
+    console.log('[Explore] Canvas dimensions:', w, 'x', h);
     
     this.camera = new THREE.PerspectiveCamera(60, w/h, 0.1, 1000);
     this.camera.position.set(0, 1.7, 15);  // Start 15 units back, looking at village
@@ -59,10 +63,22 @@ export class ExploreMode {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setClearColor(0x87ceeb);  // Sky blue clear color
     
+    console.log('[Explore] Renderer created:', this.renderer.domElement);
+    
     // Add to explore container
     const container = document.getElementById('explore-container');
+    console.log('[Explore] Explore container found:', container);
+    
     if (container) {
       container.appendChild(this.renderer.domElement);
+      console.log('[Explore] Canvas appended to container');
+      
+      // Make sure canvas is styled properly
+      this.renderer.domElement.style.display = 'block';
+      this.renderer.domElement.style.width = '100%';
+      this.renderer.domElement.style.height = '100%';
+    } else {
+      console.error('[Explore] ERROR: explore-container not found!');
     }
     
     // Lighting - brighter for visibility

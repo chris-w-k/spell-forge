@@ -69,12 +69,18 @@ export class ModeManager {
     const battleContainer = document.getElementById('three-container');
     const exploreHud = document.getElementById('explore-hud');
     
+    console.log('[ModeManager] exploreContainer:', exploreContainer);
+    console.log('[ModeManager] battleContainer:', battleContainer);
+    
     // Battle UI elements to hide
     const topUI = document.getElementById('topui');
     const bottomUI = document.getElementById('bottomui');
     const fxLayer = document.getElementById('fxlayer');
     
-    if (exploreContainer) exploreContainer.style.display = 'block';
+    if (exploreContainer) {
+      exploreContainer.style.display = 'block';
+      console.log('[ModeManager] Explore container shown, children:', exploreContainer.children.length);
+    }
     if (battleContainer) battleContainer.style.display = 'none';
     if (exploreHud) exploreHud.style.display = 'block';
     
