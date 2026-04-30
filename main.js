@@ -73,11 +73,16 @@ function startGame() {
     titleScreen.style.display = 'none';
   }
   
-  // Hide battle container initially
+  // Hide all battle UI elements initially
   const battleContainer = document.getElementById('three-container');
-  if (battleContainer) {
-    battleContainer.style.display = 'none';
-  }
+  const topUI = document.getElementById('topui');
+  const bottomUI = document.getElementById('bottomui');
+  const fxLayer = document.getElementById('fxlayer');
+  
+  if (battleContainer) battleContainer.style.display = 'none';
+  if (topUI) topUI.style.display = 'none';
+  if (bottomUI) bottomUI.style.display = 'none';
+  if (fxLayer) fxLayer.style.display = 'none';
   
   // Show explore mode
   if (modeManager) {

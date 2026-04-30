@@ -66,12 +66,22 @@ export class ModeManager {
     
     // Show/hide containers
     const exploreContainer = document.getElementById('explore-container');
-    const battleContainer = document.getElementById('battle-container');
+    const battleContainer = document.getElementById('three-container');
     const exploreHud = document.getElementById('explore-hud');
+    
+    // Battle UI elements to hide
+    const topUI = document.getElementById('topui');
+    const bottomUI = document.getElementById('bottomui');
+    const fxLayer = document.getElementById('fxlayer');
     
     if (exploreContainer) exploreContainer.style.display = 'block';
     if (battleContainer) battleContainer.style.display = 'none';
     if (exploreHud) exploreHud.style.display = 'block';
+    
+    // Hide battle UI
+    if (topUI) topUI.style.display = 'none';
+    if (bottomUI) bottomUI.style.display = 'none';
+    if (fxLayer) fxLayer.style.display = 'none';
     
     // Update HUD
     this.updateExploreHUD();
@@ -87,12 +97,22 @@ export class ModeManager {
     
     // Show/hide containers
     const exploreContainer = document.getElementById('explore-container');
-    const battleContainer = document.getElementById('battle-container');
+    const battleContainer = document.getElementById('three-container');
     const exploreHud = document.getElementById('explore-hud');
+    
+    // Battle UI elements to show
+    const topUI = document.getElementById('topui');
+    const bottomUI = document.getElementById('bottomui');
+    const fxLayer = document.getElementById('fxlayer');
     
     if (exploreContainer) exploreContainer.style.display = 'none';
     if (battleContainer) battleContainer.style.display = 'block';
     if (exploreHud) exploreHud.style.display = 'none';
+    
+    // Show battle UI
+    if (topUI) topUI.style.display = 'block';
+    if (bottomUI) bottomUI.style.display = 'block';
+    if (fxLayer) fxLayer.style.display = 'block';
     
     // Stop explore loop, battle has its own
     this.stopRenderLoop();
