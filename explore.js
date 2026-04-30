@@ -43,42 +43,54 @@ export class ExploreMode {
   initScene() {
     console.log('[Explore] initScene starting...');
     
-    // Camera - first person
+    // Get dimensions from the frame element
     const frame = document.getElementById('frame');
-    const w = frame ? frame.clientWidth : 800;
-    const h = frame ? frame.clientHeight : 600;
+    const exploreContainer = document.getElementById('explore-container');
     
-    console.log('[Explore] Canvas dimensions:', w, 'x', h);
+    let w = 800, h = 600;
+    
+    if (frame) {
+      w = frame.clientWidth || 800;
+      h = frame.clientHeight || 600;
+      console.log('[Explore] Frame dimensions:', w, 'x', h);
+    } else {
+      console.warn('[Explore] Frame not found, using defaults');
+    }
+    
+    console.log('[Explore] Creating camera and renderer...');
     
     this.camera = new THREE.PerspectiveCamera(60, w/h, 0.1, 1000);
-    this.camera.position.set(0, 1.7, 15);  // Start 15 units back, looking at village
-    this.camera.lookAt(0, 0, 0);  // Look at village center
+    this.camera.position.set(0, 1.7, 15);
+    this.camera.lookAt(0, 0, 0);
     this.playerPos.set(0, 1.7, 15);
-    this.playerRot = Math.PI;  // Facing negative Z (into village)
+    this.playerRot = Math.PI;
     
     // Renderer
     this.renderer = new THREE.WebGLRenderer({antialias: true, alpha: false});
     this.renderer.setSize(w, h);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.setClearColor(0x87ceeb);  // Sky blue clear color
+    this.renderer.setClearColor(0x87ceeb);
     
-    console.log('[Explore] Renderer created:', this.renderer.domElement);
+    console.log('[Explore] Renderer created, size:', w, 'x', h);
+    console.log('[Explore] Renderer dom element:', this.renderer.domElement);
     
     // Add to explore container
-    const container = document.getElementById('explore-container');
-    console.log('[Explore] Explore container found:', container);
-    
-    if (container) {
-      container.appendChild(this.renderer.domElement);
-      console.log('[Explore] Canvas appended to container');
+    if (exploreContainer) {
+      // Make sure container fills the frame
+      exploreContainer.style.width = w + 'px';
+      exploreContainer.style.height = h + 'px';
       
-      // Make sure canvas is styled properly
+      exploreContainer.appendChild(this.renderer.domElement);
+      console.log('[Explore] Canvas appended. Container children:', exploreContainer.children.length);
+      
+      // Style the canvas
       this.renderer.domElement.style.display = 'block';
       this.renderer.domElement.style.width = '100%';
       this.renderer.domElement.style.height = '100%';
     } else {
       console.error('[Explore] ERROR: explore-container not found!');
+      return;
     }
     
     // Lighting - brighter for visibility
