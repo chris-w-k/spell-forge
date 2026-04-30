@@ -1179,6 +1179,13 @@ async function startGame(){
   startComedyMusic(scaledTempoMs(1));
 }
 
-// Boot
-initThree();
-preloadAll();
+// Boot (DISABLED - now controlled by main.js)
+// initThree();
+// preloadAll();
+
+// Export functions for main.js to use
+window.WORDSLAP_Battle = {
+  initThree,
+  preloadAll,
+  startGame
+};

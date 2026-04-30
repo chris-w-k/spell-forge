@@ -42,8 +42,10 @@ export class ExploreMode {
   
   initScene() {
     // Camera - first person
-    const container = document.getElementById('explore-container');
-    const w = 800, h = 600;
+    const frame = document.getElementById('frame');
+    const w = frame ? frame.clientWidth : 800;
+    const h = frame ? frame.clientHeight : 600;
+    
     this.camera = new THREE.PerspectiveCamera(60, w/h, 0.1, 1000);
     this.camera.position.copy(this.playerPos);
     this.camera.rotation.y = this.playerRot;
@@ -53,7 +55,12 @@ export class ExploreMode {
     this.renderer.setSize(w, h);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    container.appendChild(this.renderer.domElement);
+    
+    // Add to explore container
+    const container = document.getElementById('explore-container');
+    if (container) {
+      container.appendChild(this.renderer.domElement);
+    }
     
     // Lighting - daytime village
     const ambient = new THREE.AmbientLight(0xffffff, 0.6);
