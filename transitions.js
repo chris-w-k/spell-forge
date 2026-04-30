@@ -290,8 +290,12 @@ export class ModeManager {
   // ══════════ RENDER LOOP ══════════
   
   startRenderLoop() {
-    if (this.isRunning) return;
+    if (this.isRunning) {
+      console.log('[ModeManager] Render loop already running');
+      return;
+    }
     
+    console.log('[ModeManager] Starting render loop');
     this.isRunning = true;
     
     const loop = () => {

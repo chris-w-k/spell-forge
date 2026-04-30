@@ -47,14 +47,17 @@ export class ExploreMode {
     const h = frame ? frame.clientHeight : 600;
     
     this.camera = new THREE.PerspectiveCamera(60, w/h, 0.1, 1000);
-    this.camera.position.copy(this.playerPos);
-    this.camera.rotation.y = this.playerRot;
+    this.camera.position.set(0, 1.7, 15);  // Start 15 units back, looking at village
+    this.camera.lookAt(0, 0, 0);  // Look at village center
+    this.playerPos.set(0, 1.7, 15);
+    this.playerRot = Math.PI;  // Facing negative Z (into village)
     
     // Renderer
-    this.renderer = new THREE.WebGLRenderer({antialias: true});
+    this.renderer = new THREE.WebGLRenderer({antialias: true, alpha: false});
     this.renderer.setSize(w, h);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.setClearColor(0x87ceeb);  // Sky blue clear color
     
     // Add to explore container
     const container = document.getElementById('explore-container');
@@ -62,14 +65,14 @@ export class ExploreMode {
       container.appendChild(this.renderer.domElement);
     }
     
-    // Lighting - daytime village
-    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    // Lighting - brighter for visibility
+    const ambient = new THREE.AmbientLight(0xffffff, 0.8);  // Increased from 0.6
     this.scene.add(ambient);
     
-    const hemi = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.5);
+    const hemi = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.6);
     this.scene.add(hemi);
     
-    const sun = new THREE.DirectionalLight(0xffffee, 0.8);
+    const sun = new THREE.DirectionalLight(0xffffee, 1.2);  // Increased from 0.8
     sun.position.set(50, 100, 50);
     sun.castShadow = true;
     sun.shadow.camera.left = -50;
@@ -79,6 +82,11 @@ export class ExploreMode {
     sun.shadow.mapSize.width = 2048;
     sun.shadow.mapSize.height = 2048;
     this.scene.add(sun);
+    
+    // Add a point light at village center for extra visibility
+    const pointLight = new THREE.PointLight(0xffffaa, 1.0, 100);
+    pointLight.position.set(0, 10, 0);
+    this.scene.add(pointLight);
     
     // Fog for atmosphere
     this.scene.fog = new THREE.Fog(0x87ceeb, 50, 200);
@@ -96,6 +104,8 @@ export class ExploreMode {
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     this.scene.add(ground);
+    
+    console.log('[Explore] Scene initialized, camera at:', this.camera.position);
   }
   
   setupControls() {
@@ -460,6 +470,7 @@ export class ExploreMode {
   async init() {
     await this.buildVillage();
     await this.placeAnimalNPCs();
+    console.log('[Explore] Init complete. Scene has', this.scene.children.length, 'objects');
   }
   
   setAnimalDefeated(npc) {
