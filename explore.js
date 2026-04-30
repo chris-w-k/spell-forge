@@ -488,6 +488,16 @@ export class ExploreMode {
   // ══════════ RENDER LOOP ══════════
   
   render() {
+    if (!this.frameCount) this.frameCount = 0;
+    this.frameCount++;
+    
+    // Log every 60 frames (about once per second)
+    if (this.frameCount % 60 === 0) {
+      console.log('[Explore] Rendering frame', this.frameCount, 
+                  '| Camera:', this.camera.position.toArray(),
+                  '| Scene objects:', this.scene.children.length);
+    }
+    
     const dt = this.clock.getDelta();
     this.update(dt);
     this.renderer.render(this.scene, this.camera);

@@ -67,10 +67,11 @@ window.addEventListener('DOMContentLoaded', () => {
 function startGame() {
   console.log('[Main] Starting game...');
   
-  // Hide title screen
+  // Hide title screen properly using the .gone class
   const titleScreen = document.getElementById('sTitle');
   if (titleScreen) {
-    titleScreen.style.display = 'none';
+    titleScreen.classList.add('gone');
+    titleScreen.style.display = 'none';  // belt and suspenders
   }
   
   // Hide all battle UI elements initially
