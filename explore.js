@@ -93,14 +93,14 @@ export class ExploreMode {
       return;
     }
     
-    // Lighting - brighter for visibility
-    const ambient = new THREE.AmbientLight(0xffffff, 0.8);  // Increased from 0.6
+    // Lighting - VERY bright daytime
+    const ambient = new THREE.AmbientLight(0xffffff, 1.5);  // Much brighter
     this.scene.add(ambient);
     
-    const hemi = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.6);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0xddccaa, 1.0);
     this.scene.add(hemi);
     
-    const sun = new THREE.DirectionalLight(0xffffee, 1.2);  // Increased from 0.8
+    const sun = new THREE.DirectionalLight(0xffffff, 2.0);
     sun.position.set(50, 100, 50);
     sun.castShadow = true;
     sun.shadow.camera.left = -50;
@@ -111,21 +111,29 @@ export class ExploreMode {
     sun.shadow.mapSize.height = 2048;
     this.scene.add(sun);
     
-    // Add a point light at village center for extra visibility
-    const pointLight = new THREE.PointLight(0xffffaa, 1.0, 100);
-    pointLight.position.set(0, 10, 0);
-    this.scene.add(pointLight);
+    // Multiple point lights for visibility
+    const pointLight1 = new THREE.PointLight(0xffffff, 2.0, 100);
+    pointLight1.position.set(0, 15, 0);
+    this.scene.add(pointLight1);
     
-    // Fog for atmosphere
-    this.scene.fog = new THREE.Fog(0x87ceeb, 50, 200);
+    const pointLight2 = new THREE.PointLight(0xffeecc, 1.0, 50);
+    pointLight2.position.set(15, 8, 15);
+    this.scene.add(pointLight2);
     
-    // Sky color
-    this.scene.background = new THREE.Color(0x87ceeb);
+    const pointLight3 = new THREE.PointLight(0xffeecc, 1.0, 50);
+    pointLight3.position.set(-15, 8, -15);
+    this.scene.add(pointLight3);
     
-    // Ground plane (temp - will be replaced with tiles)
+    // Lighter fog so you can see further
+    this.scene.fog = new THREE.Fog(0xb0d8ff, 80, 250);
+    
+    // Sky color - bright blue
+    this.scene.background = new THREE.Color(0xb0d8ff);
+    
+    // Ground plane - brighter green
     const groundGeo = new THREE.PlaneGeometry(200, 200);
     const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x6b8e23,
+      color: 0x90ee90,  // Light green
       roughness: 0.9
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -181,14 +189,14 @@ export class ExploreMode {
     
     // Village layout (8 buildings in a rough circle around center)
     const buildingPositions = [
-      {name: 'Tavern',     pos: {x: -8,  z: -8}, rot: Math.PI/4,   size: {x:6, y:4, z:8},  color: 0x8b4513},
-      {name: 'Barn',       pos: {x: 8,   z: -8}, rot: -Math.PI/4,  size: {x:10,y:6, z:10}, color: 0xa0522d},
-      {name: 'Church',     pos: {x: 0,   z: -15},rot: 0,           size: {x:8, y:10,z:12}, color: 0xdcdcdc},
-      {name: 'Blacksmith', pos: {x: -12, z: 0},  rot: Math.PI/2,   size: {x:5, y:4, z:6},  color: 0x696969},
-      {name: 'House_1',    pos: {x: 12,  z: 0},  rot: -Math.PI/2,  size: {x:6, y:5, z:6},  color: 0xd2691e},
-      {name: 'House_2',    pos: {x: -8,  z: 8},  rot: 3*Math.PI/4, size: {x:6, y:5, z:6},  color: 0xcd853f},
-      {name: 'Shop',       pos: {x: 8,   z: 8},  rot: -3*Math.PI/4,size: {x:5, y:4, z:7},  color: 0xdaa520},
-      {name: 'Well',       pos: {x: 0,   z: 0},  rot: 0,           size: {x:2, y:3, z:2},  color: 0x808080}
+      {name: 'Tavern',     pos: {x: -8,  z: -8}, rot: Math.PI/4,   size: {x:6, y:4, z:8},  color: 0xc97a3f},
+      {name: 'Barn',       pos: {x: 8,   z: -8}, rot: -Math.PI/4,  size: {x:10,y:6, z:10}, color: 0xd4502a},
+      {name: 'Church',     pos: {x: 0,   z: -15},rot: 0,           size: {x:8, y:10,z:12}, color: 0xf0f0f0},
+      {name: 'Blacksmith', pos: {x: -12, z: 0},  rot: Math.PI/2,   size: {x:5, y:4, z:6},  color: 0x808080},
+      {name: 'House_1',    pos: {x: 12,  z: 0},  rot: -Math.PI/2,  size: {x:6, y:5, z:6},  color: 0xff8c42},
+      {name: 'House_2',    pos: {x: -8,  z: 8},  rot: 3*Math.PI/4, size: {x:6, y:5, z:6},  color: 0xffa756},
+      {name: 'Shop',       pos: {x: 8,   z: 8},  rot: -3*Math.PI/4,size: {x:5, y:4, z:7},  color: 0xffd700},
+      {name: 'Well',       pos: {x: 0,   z: 0},  rot: 0,           size: {x:2, y:3, z:2},  color: 0xa0a0a0}
     ];
     
     for (const bld of buildingPositions) {

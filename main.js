@@ -52,6 +52,12 @@ window.addEventListener('DOMContentLoaded', () => {
     playBtn.addEventListener('click', startGame);
   }
   
+  // Quit button handler
+  const quitBtn = document.getElementById('quit-btn');
+  if (quitBtn) {
+    quitBtn.addEventListener('click', quitToTitle);
+  }
+  
   // Also allow Enter/Space from title screen
   window.addEventListener('keydown', (e) => {
     if ((e.key === 'Enter' || e.key === ' ') && playBtn && !playBtn.disabled) {
@@ -64,6 +70,31 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+function quitToTitle() {
+  console.log('[Main] Quitting to title...');
+  
+  // Hide explore mode
+  const exploreContainer = document.getElementById('explore-container');
+  const exploreHud = document.getElementById('explore-hud');
+  const quitBtn = document.getElementById('quit-btn');
+  
+  if (exploreContainer) exploreContainer.style.display = 'none';
+  if (exploreHud) exploreHud.style.display = 'none';
+  if (quitBtn) quitBtn.style.display = 'none';
+  
+  // Show title screen
+  const titleScreen = document.getElementById('sTitle');
+  if (titleScreen) {
+    titleScreen.classList.remove('gone');
+    titleScreen.style.display = 'flex';
+  }
+  
+  // Stop render loop
+  if (modeManager) {
+    modeManager.stopRenderLoop();
+  }
+}
+
 function startGame() {
   console.log('[Main] Starting game...');
   
@@ -71,7 +102,7 @@ function startGame() {
   const titleScreen = document.getElementById('sTitle');
   if (titleScreen) {
     titleScreen.classList.add('gone');
-    titleScreen.style.display = 'none';  // belt and suspenders
+    titleScreen.style.display = 'none';
   }
   
   // Hide all battle UI elements initially
@@ -84,6 +115,10 @@ function startGame() {
   if (topUI) topUI.style.display = 'none';
   if (bottomUI) bottomUI.style.display = 'none';
   if (fxLayer) fxLayer.style.display = 'none';
+  
+  // Show quit button
+  const quitBtn = document.getElementById('quit-btn');
+  if (quitBtn) quitBtn.style.display = 'block';
   
   // Show explore mode
   if (modeManager) {
