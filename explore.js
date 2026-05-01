@@ -1,6 +1,22 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// Per-animal scale for explore mode (smaller than battle since they're farther away)
+const MODEL_SCALES = {
+  Bull: 0.7,
+  Stag: 0.7,
+  Husky: 0.8,
+  Wolf: 0.8,
+  Deer: 0.7,
+  Horse: 0.65,
+  Shibalnu: 0.85,
+  Donkey: 0.7,
+  Cow: 0.7,
+  Horse_White: 0.65,
+  Fox: 0.85,
+  Alpaca: 0.7
+};
+
 // ══════════ EXPLORE MODE - 3D Village ══════════
 export class ExploreMode {
   constructor() {
@@ -297,29 +313,94 @@ export class ExploreMode {
   }
   
   async createAnimalNPC(config) {
-    // Bright orange sphere (BasicMaterial = always full brightness)
-    const geo = new THREE.SphereGeometry(0.7, 16, 16);
-    const mat = new THREE.MeshBasicMaterial({
-      color: 0xff6b35
-    });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(config.pos.x, 0.7, config.pos.z);
-    this.scene.add(mesh);
+    // Phase 2: Load actual animal GLTF model
+    const path = `./Models/Animals/${config.type}.gltf`;
     
-    const npc = {
-      type: config.type,
-      area: config.area,
-      position: new THREE.Vector3(config.pos.x, 0, config.pos.z),
-      mesh: mesh,
-      mixer: null,
-      defeated: false,
-      state: 'idle',
-      triggerRadius: 3.0,  // approach within 3 units to see prompt
-      idleRotation: Math.random() * Math.PI * 2,
-      idleTimer: 0
-    };
-    
-    this.animalNPCs.push(npc);
+    try {
+      console.log(`[Explore] Loading animal model: ${config.type}`);
+      const gltf = await this.gltfLoader.loadAsync(path);
+      const mesh = gltf.scene;
+      
+      // Convert materials to ensure visibility (same as battle mode)
+      mesh.traverse(child => {
+        if (child.isMesh && child.material) {
+          // Force MeshBasicMaterial-like rendering for consistent visibility
+          if (child.material.map) {
+            // Has texture - create new MeshBasicMaterial with texture
+            const newMat = new THREE.MeshBasicMaterial({
+              map: child.material.map,
+              color: 0xffffff
+            });
+            child.material = newMat;
+          } else {
+            // No texture - use color from existing material
+            const color = child.material.color || new THREE.Color(0xffffff);
+            child.material = new THREE.MeshBasicMaterial({color: color});
+          }
+        }
+      });
+      
+      // Scale and position based on model config
+      const scale = MODEL_SCALES[config.type] || 1.0;
+      mesh.scale.setScalar(scale);
+      mesh.position.set(config.pos.x, 0, config.pos.z);
+      
+      this.scene.add(mesh);
+      
+      // Set up animation mixer for walk loop
+      let mixer = null;
+      if (gltf.animations && gltf.animations.length > 0) {
+        mixer = new THREE.AnimationMixer(mesh);
+        
+        // Find walk or idle animation
+        let clip = gltf.animations.find(a => a.name.toLowerCase().includes('walk'));
+        if (!clip) clip = gltf.animations.find(a => a.name.toLowerCase().includes('idle'));
+        if (!clip) clip = gltf.animations[0];
+        
+        if (clip) {
+          const action = mixer.clipAction(clip);
+          action.play();
+          this.mixers.push(mixer);
+        }
+      }
+      
+      const npc = {
+        type: config.type,
+        area: config.area,
+        position: new THREE.Vector3(config.pos.x, 0, config.pos.z),
+        mesh: mesh,
+        mixer: mixer,
+        defeated: false,
+        state: 'idle',
+        triggerRadius: 3.0,
+        idleRotation: Math.random() * Math.PI * 2,
+        idleTimer: 0
+      };
+      
+      this.animalNPCs.push(npc);
+    } catch (err) {
+      console.error(`[Explore] Failed to load ${config.type}, using placeholder:`, err);
+      
+      // Fallback to orange sphere
+      const geo = new THREE.SphereGeometry(0.7, 16, 16);
+      const mat = new THREE.MeshBasicMaterial({color: 0xff6b35});
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(config.pos.x, 0.7, config.pos.z);
+      this.scene.add(mesh);
+      
+      this.animalNPCs.push({
+        type: config.type,
+        area: config.area,
+        position: new THREE.Vector3(config.pos.x, 0, config.pos.z),
+        mesh: mesh,
+        mixer: null,
+        defeated: false,
+        state: 'idle',
+        triggerRadius: 3.0,
+        idleRotation: Math.random() * Math.PI * 2,
+        idleTimer: 0
+      });
+    }
   }
   
   // ══════════ COLLISION SYSTEM ══════════
@@ -419,6 +500,9 @@ export class ExploreMode {
   }
   
   updateNPCs(dt) {
+    let nearestNPC = null;
+    let nearestDist = Infinity;
+    
     for (const npc of this.animalNPCs) {
       if (npc.defeated) {
         npc.state = 'corpse';
@@ -438,8 +522,11 @@ export class ExploreMode {
         const angleToPlayer = Math.atan2(dirToPlayer.x, dirToPlayer.z);
         npc.mesh.rotation.y = angleToPlayer;
         
-        // Show interaction prompt
-        this.showInteractPrompt(npc);
+        // Track nearest NPC for interaction prompt
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestNPC = npc;
+        }
       } else {
         npc.state = 'idle';
         
@@ -447,6 +534,13 @@ export class ExploreMode {
         npc.idleTimer += dt;
         npc.mesh.rotation.y = npc.idleRotation + Math.sin(npc.idleTimer * 0.5) * 0.3;
       }
+    }
+    
+    // Show prompt for nearest NPC, or hide if none nearby
+    if (nearestNPC) {
+      this.showInteractPrompt(nearestNPC);
+    } else {
+      this.hideInteractPrompt();
     }
   }
   
@@ -472,6 +566,9 @@ export class ExploreMode {
   tryInteract() {
     if (this.nearestNPC && !this.nearestNPC.defeated) {
       console.log(`[Explore] Triggering battle with ${this.nearestNPC.type}`);
+      
+      // Hide the interact prompt immediately
+      this.hideInteractPrompt();
       
       // Dispatch event to main game controller
       window.dispatchEvent(new CustomEvent('startBattle', {

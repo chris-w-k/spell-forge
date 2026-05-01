@@ -68,6 +68,8 @@ export class ModeManager {
     const exploreContainer = document.getElementById('explore-container');
     const battleContainer = document.getElementById('three-container');
     const exploreHud = document.getElementById('explore-hud');
+    const fleeBtn = document.getElementById('flee-btn');
+    const quitBtn = document.getElementById('quit-btn');
     
     console.log('[ModeManager] exploreContainer:', exploreContainer);
     console.log('[ModeManager] battleContainer:', battleContainer);
@@ -83,6 +85,8 @@ export class ModeManager {
     }
     if (battleContainer) battleContainer.style.display = 'none';
     if (exploreHud) exploreHud.style.display = 'block';
+    if (fleeBtn) fleeBtn.style.display = 'none';
+    if (quitBtn) quitBtn.style.display = 'block';
     
     // Hide battle UI
     if (topUI) topUI.style.display = 'none';
@@ -105,6 +109,8 @@ export class ModeManager {
     const exploreContainer = document.getElementById('explore-container');
     const battleContainer = document.getElementById('three-container');
     const exploreHud = document.getElementById('explore-hud');
+    const interactPrompt = document.getElementById('interact-prompt');
+    const quitBtn = document.getElementById('quit-btn');
     
     // Battle UI elements to show
     const topUI = document.getElementById('topui');
@@ -114,14 +120,67 @@ export class ModeManager {
     if (exploreContainer) exploreContainer.style.display = 'none';
     if (battleContainer) battleContainer.style.display = 'block';
     if (exploreHud) exploreHud.style.display = 'none';
+    if (interactPrompt) interactPrompt.style.display = 'none';
+    if (quitBtn) quitBtn.style.display = 'none';
     
     // Show battle UI
     if (topUI) topUI.style.display = 'block';
     if (bottomUI) bottomUI.style.display = 'block';
     if (fxLayer) fxLayer.style.display = 'block';
     
+    // Show "Flee" button to return to village
+    this.showFleeButton();
+    
     // Stop explore loop, battle has its own
     this.stopRenderLoop();
+  }
+  
+  showFleeButton() {
+    let fleeBtn = document.getElementById('flee-btn');
+    if (!fleeBtn) {
+      fleeBtn = document.createElement('button');
+      fleeBtn.id = 'flee-btn';
+      fleeBtn.textContent = '← FLEE TO VILLAGE';
+      fleeBtn.style.cssText = `
+        position:absolute;
+        bottom:20px;
+        left:20px;
+        background:rgba(0,0,0,0.8);
+        color:#fff;
+        border:2px solid #ff6b35;
+        padding:10px 20px;
+        border-radius:8px;
+        font-family:'Bangers',cursive;
+        font-size:18px;
+        cursor:pointer;
+        letter-spacing:1px;
+        z-index:1000;
+      `;
+      fleeBtn.addEventListener('click', () => this.fleeBattle());
+      
+      const frame = document.getElementById('frame');
+      if (frame) frame.appendChild(fleeBtn);
+    }
+    fleeBtn.style.display = 'block';
+  }
+  
+  fleeBattle() {
+    console.log('[ModeManager] Player fled the battle');
+    
+    // Stop battle music if playing
+    if (window.WORDSLAP_Battle && window.WORDSLAP_Battle.stopMusic) {
+      try { window.WORDSLAP_Battle.stopMusic(); } catch(e) {}
+    }
+    
+    // Hide flee button
+    const fleeBtn = document.getElementById('flee-btn');
+    if (fleeBtn) fleeBtn.style.display = 'none';
+    
+    // Clear the current NPC reference (they're still alive)
+    this.playerState.currentNPC = null;
+    
+    // Return to explore mode
+    this.switchToExplore();
   }
   
   // ══════════ BATTLE TRANSITIONS ══════════
