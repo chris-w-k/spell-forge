@@ -68,9 +68,13 @@ export class ExploreMode {
     // Renderer
     this.renderer = new THREE.WebGLRenderer({antialias: true, alpha: false});
     this.renderer.setSize(w, h);
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.enabled = false;  // Disable shadows for now
     this.renderer.setClearColor(0x87ceeb);
+    
+    // CRITICAL: Disable tone mapping which was making scene dark
+    this.renderer.toneMapping = THREE.NoToneMapping;
+    this.renderer.toneMappingExposure = 1.0;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     
     console.log('[Explore] Renderer created, size:', w, 'x', h);
     console.log('[Explore] Renderer dom element:', this.renderer.domElement);
@@ -130,15 +134,13 @@ export class ExploreMode {
     // Sky color - bright blue
     this.scene.background = new THREE.Color(0xb0d8ff);
     
-    // Ground plane - brighter green
+    // Ground plane - bright green using BasicMaterial
     const groundGeo = new THREE.PlaneGeometry(200, 200);
-    const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x90ee90,  // Light green
-      roughness: 0.9
+    const groundMat = new THREE.MeshBasicMaterial({
+      color: 0x4ade80  // bright green
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
     this.scene.add(ground);
     
     console.log('[Explore] Scene initialized, camera at:', this.camera.position);
@@ -210,18 +212,14 @@ export class ExploreMode {
   }
   
   async createBuilding(config) {
-    // Placeholder: colored box for now
-    // TODO: Replace with actual GLTF models
+    // Use MeshBasicMaterial - no lighting needed, always full brightness
     const geo = new THREE.BoxGeometry(config.size.x, config.size.y, config.size.z);
-    const mat = new THREE.MeshStandardMaterial({
-      color: config.color,
-      roughness: 0.8
+    const mat = new THREE.MeshBasicMaterial({
+      color: config.color
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(config.pos.x, config.size.y / 2, config.pos.z);
     mesh.rotation.y = config.rot;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
     mesh.userData.name = config.name;
     
     this.scene.add(mesh);
@@ -236,11 +234,11 @@ export class ExploreMode {
   }
   
   async addTrees() {
-    // Simple tree placeholders (cylinders + spheres)
+    // Simple tree placeholders using BasicMaterial (always bright)
     const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 3, 8);
-    const trunkMat = new THREE.MeshStandardMaterial({color: 0x8b4513});
+    const trunkMat = new THREE.MeshBasicMaterial({color: 0x8b4513});
     const foliageGeo = new THREE.SphereGeometry(2, 8, 8);
-    const foliageMat = new THREE.MeshStandardMaterial({color: 0x228b22});
+    const foliageMat = new THREE.MeshBasicMaterial({color: 0x228b22});
     
     const treePositions = [
       {x: -18, z: -10}, {x: -18, z: 0}, {x: -18, z: 10},
@@ -252,12 +250,10 @@ export class ExploreMode {
     for (const pos of treePositions) {
       const trunk = new THREE.Mesh(trunkGeo, trunkMat);
       trunk.position.set(pos.x, 1.5, pos.z);
-      trunk.castShadow = true;
       this.scene.add(trunk);
       
       const foliage = new THREE.Mesh(foliageGeo, foliageMat);
       foliage.position.set(pos.x, 4, pos.z);
-      foliage.castShadow = true;
       this.scene.add(foliage);
       
       this.props.push(trunk, foliage);
@@ -301,17 +297,13 @@ export class ExploreMode {
   }
   
   async createAnimalNPC(config) {
-    // For now, placeholder spheres
-    // TODO: Load actual animal GLTF models
-    const geo = new THREE.SphereGeometry(0.5, 16, 16);
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0xff6b35,
-      emissive: 0xff6b35,
-      emissiveIntensity: 0.2
+    // Bright orange sphere (BasicMaterial = always full brightness)
+    const geo = new THREE.SphereGeometry(0.7, 16, 16);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xff6b35
     });
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(config.pos.x, 0.5, config.pos.z);
-    mesh.castShadow = true;
+    mesh.position.set(config.pos.x, 0.7, config.pos.z);
     this.scene.add(mesh);
     
     const npc = {
@@ -375,16 +367,15 @@ export class ExploreMode {
     // Player movement
     const moveDir = new THREE.Vector3();
     
-    // Forward/backward (W/S or ArrowUp/Down)
+    // Forward/backward (W/S or ArrowUp/Down) - FIXED direction
     if (this.keys['w'] || this.keys['arrowup']) {
-      moveDir.z -= 1;
+      moveDir.z = 1;  // Forward (positive Z when accounting for camera rotation)
     }
     if (this.keys['s'] || this.keys['arrowdown']) {
-      moveDir.z += 1;
+      moveDir.z = -1;  // Backward
     }
     
-    // Strafe left/right (A/D for rotation for now)
-    // We'll use A/D to rotate the camera instead of strafe
+    // Strafe left/right - rotate the camera with A/D for now
     if (this.keys['a'] || this.keys['arrowleft']) {
       this.playerRot += this.rotSpeed * dt;
     }
@@ -392,19 +383,23 @@ export class ExploreMode {
       this.playerRot -= this.rotSpeed * dt;
     }
     
-    // Normalize and apply rotation
+    // Apply movement based on player rotation
     if (moveDir.length() > 0) {
       moveDir.normalize();
       
-      // Rotate movement direction by player rotation
-      const rotatedDir = new THREE.Vector3();
-      rotatedDir.x = moveDir.x * Math.cos(this.playerRot) - moveDir.z * Math.sin(this.playerRot);
-      rotatedDir.z = moveDir.x * Math.sin(this.playerRot) + moveDir.z * Math.cos(this.playerRot);
+      // Forward direction relative to player rotation
+      // playerRot=0 means looking down -Z axis
+      // playerRot=PI means looking down +Z axis (toward village)
+      const forward = new THREE.Vector3(
+        -Math.sin(this.playerRot),
+        0,
+        -Math.cos(this.playerRot)
+      );
       
       // Calculate new position
       const newPos = this.playerPos.clone();
-      newPos.x += rotatedDir.x * this.moveSpeed * dt;
-      newPos.z += rotatedDir.z * this.moveSpeed * dt;
+      newPos.x += forward.x * moveDir.z * this.moveSpeed * dt;
+      newPos.z += forward.z * moveDir.z * this.moveSpeed * dt;
       
       // Check collision
       if (!this.checkCollision(newPos)) {
