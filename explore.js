@@ -13,8 +13,8 @@ export class ExploreMode {
     this.playerPos = new THREE.Vector3(0, 1.7, 15);  // start at village entrance
     this.playerRot = Math.PI;  // facing into village
     this.playerVel = new THREE.Vector3();
-    this.moveSpeed = 3.0;      // units per second
-    this.rotSpeed = 2.0;       // radians per second
+    this.moveSpeed = 6.0;      // units per second (doubled from 3.0)
+    this.rotSpeed = 2.5;       // radians per second (slightly faster too)
     this.gravity = -9.8;
     this.groundY = 1.7;        // camera height above ground
     
