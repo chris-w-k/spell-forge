@@ -1159,24 +1159,48 @@ async function preloadAll(){
   }
 }
 
+// Storage for pre-set animal and round (used by explore mode)
+let _nextAnimalType = null;
+let _nextRound = null;
+
+function setNextAnimal(type) {
+  _nextAnimalType = type;
+}
+
+function setRound(r) {
+  _nextRound = r;
+}
+
 async function startGame(){
-  if(S.phase!=='title')return;
+  // Allow starting from any phase (was: only from title)
   ensureAudio();
   S.phase='battle';
-  S.round=1;
-  S.animal=pickRandomAnimal([]);
+  
+  // Use pre-set round from explore mode, or default to 1
+  S.round = _nextRound || 1;
+  
+  // Use pre-set animal from explore mode, or pick random
+  if (_nextAnimalType) {
+    S.animal = ANIMALS.find(a => a.type === _nextAnimalType) || ANIMALS[0];
+    _nextAnimalType = null; // Clear for next time
+  } else {
+    S.animal = pickRandomAnimal([]);
+  }
+  _nextRound = null;
+  
   S.recentTypes=[S.animal.type];
-  const stats=scaledStats(S.animal,1);
+  const stats=scaledStats(S.animal, S.round);
   S.mmax=stats.hp;S.mhp=stats.hp;S.matk=stats.atk;S.miv=stats.iv;
   S.php=100;S.tiles=mkTiles(S.animal.tiles);S.sel=[];S.used=new Set();S.combo=0;
-  S.totalScore=0;S.totalSlaps=0;S.dying=false;S.sceneIdx=0;
+  // Don't reset totalScore - explore mode tracks it
+  S.totalSlaps=0;S.dying=false;S.sceneIdx=0;
   S.log=[`A ${S.animal.name} approaches!`];
   document.getElementById('sTitle').classList.add('gone');
   buildScene(SCENES[0]);
   await spawnAnimal(S.animal.type);
   renderBattle();
   startTimers();
-  startComedyMusic(scaledTempoMs(1));
+  startComedyMusic(scaledTempoMs(S.round));
 }
 
 // Boot (DISABLED - now controlled by main.js)
@@ -1187,5 +1211,8 @@ async function startGame(){
 window.WORDSLAP_Battle = {
   initThree,
   preloadAll,
-  startGame
+  startGame,
+  setNextAnimal,
+  setRound,
+  stopMusic
 };

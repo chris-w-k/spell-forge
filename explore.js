@@ -167,8 +167,9 @@ export class ExploreMode {
     window.addEventListener('keydown', (e) => {
       this.keys[e.key.toLowerCase()] = true;
       
-      // Space for interaction (will trigger battles later)
+      // Space for interaction (trigger battles)
       if (e.key === ' ') {
+        console.log('[Explore] SPACE pressed, nearestNPC:', this.nearestNPC?.type || 'none');
         this.tryInteract();
       }
       
@@ -372,7 +373,7 @@ export class ExploreMode {
         mixer: mixer,
         defeated: false,
         state: 'idle',
-        triggerRadius: 3.0,
+        triggerRadius: 4.0,
         idleRotation: Math.random() * Math.PI * 2,
         idleTimer: 0
       };
@@ -396,7 +397,7 @@ export class ExploreMode {
         mixer: null,
         defeated: false,
         state: 'idle',
-        triggerRadius: 3.0,
+        triggerRadius: 4.0,
         idleRotation: Math.random() * Math.PI * 2,
         idleTimer: 0
       });
@@ -406,35 +407,33 @@ export class ExploreMode {
   // ══════════ COLLISION SYSTEM ══════════
   
   addCollider(center, size, rotation) {
-    // Simple AABB (axis-aligned bounding box)
-    // For rotated buildings, we'll use a slightly larger box to be safe
+    // Use proper AABB without expansion for cleaner collision
     const halfSize = size.clone().multiplyScalar(0.5);
-    
-    // Expand slightly for rotated buildings
-    const expansion = Math.abs(Math.sin(rotation)) * Math.max(size.x, size.z) * 0.5;
     
     this.colliders.push({
       center: center.clone(),
-      halfSize: new THREE.Vector3(
-        halfSize.x + expansion,
-        halfSize.y,
-        halfSize.z + expansion
-      )
+      halfSize: halfSize.clone(),
+      rotation: rotation
     });
   }
   
   checkCollision(point) {
-    const playerRadius = 0.5;  // treat player as 0.5 unit radius cylinder
+    const playerRadius = 0.4;  // Player is treated as a small cylinder
     
     for (const col of this.colliders) {
-      // Expand collider by player radius
-      const minX = col.center.x - col.halfSize.x - playerRadius;
-      const maxX = col.center.x + col.halfSize.x + playerRadius;
-      const minZ = col.center.z - col.halfSize.z - playerRadius;
-      const maxZ = col.center.z + col.halfSize.z + playerRadius;
+      // For rotated buildings, transform point into building's local space
+      let localX = point.x - col.center.x;
+      let localZ = point.z - col.center.z;
       
-      if (point.x > minX && point.x < maxX &&
-          point.z > minZ && point.z < maxZ) {
+      // Rotate point into building's frame
+      const cos = Math.cos(-col.rotation);
+      const sin = Math.sin(-col.rotation);
+      const rotX = localX * cos - localZ * sin;
+      const rotZ = localX * sin + localZ * cos;
+      
+      // Check if point (with player radius) is inside the rotated AABB
+      if (Math.abs(rotX) < col.halfSize.x + playerRadius &&
+          Math.abs(rotZ) < col.halfSize.z + playerRadius) {
         return true;  // collision!
       }
     }
@@ -509,17 +508,16 @@ export class ExploreMode {
         continue;
       }
       
-      // Check distance to player
-      const dist = this.playerPos.distanceTo(npc.position);
+      // Check distance to player (only X/Z, ignore Y)
+      const dx = this.playerPos.x - npc.position.x;
+      const dz = this.playerPos.z - npc.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
       
       if (dist < npc.triggerRadius) {
         npc.state = 'alert';
         
         // Face player
-        const dirToPlayer = new THREE.Vector3()
-          .subVectors(this.playerPos, npc.position)
-          .normalize();
-        const angleToPlayer = Math.atan2(dirToPlayer.x, dirToPlayer.z);
+        const angleToPlayer = Math.atan2(dx, dz);
         npc.mesh.rotation.y = angleToPlayer;
         
         // Track nearest NPC for interaction prompt

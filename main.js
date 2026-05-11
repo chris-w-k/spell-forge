@@ -62,8 +62,13 @@ window.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('keydown', (e) => {
     if ((e.key === 'Enter' || e.key === ' ') && playBtn && !playBtn.disabled) {
       const titleScreen = document.getElementById('sTitle');
-      if (titleScreen && window.getComputedStyle(titleScreen).display !== 'none') {
+      // Only trigger if title screen is actually visible (not gone)
+      if (titleScreen && 
+          !titleScreen.classList.contains('gone') && 
+          window.getComputedStyle(titleScreen).display !== 'none' &&
+          window.getComputedStyle(titleScreen).opacity !== '0') {
         e.preventDefault();
+        e.stopPropagation();
         startGame();
       }
     }

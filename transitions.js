@@ -197,17 +197,24 @@ export class ModeManager {
     // Switch to battle mode
     this.switchToBattle();
     
-    // Initialize battle with current player HP
-    // This is where you'd call into your existing game.js battle system
-    // For now, we'll dispatch an event that game.js can listen to
-    window.dispatchEvent(new CustomEvent('initBattle', {
-      detail: {
-        animalType,
-        round,
-        playerHP: this.playerState.hp,
-        playerLives: this.playerState.lives
+    // Call into game.js to start the battle
+    if (window.WORDSLAP_Battle && window.WORDSLAP_Battle.startGame) {
+      console.log('[ModeManager] Calling battle system startGame');
+      
+      // Set the specific animal type to spawn
+      if (window.WORDSLAP_Battle.setNextAnimal) {
+        window.WORDSLAP_Battle.setNextAnimal(animalType);
       }
-    }));
+      
+      // Set the round/difficulty
+      if (window.WORDSLAP_Battle.setRound) {
+        window.WORDSLAP_Battle.setRound(round);
+      }
+      
+      window.WORDSLAP_Battle.startGame();
+    } else {
+      console.error('[ModeManager] WORDSLAP_Battle not available!');
+    }
   }
   
   onBattleVictory(detail) {
