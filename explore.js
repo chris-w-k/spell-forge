@@ -244,11 +244,35 @@ export class ExploreMode {
   }
   
   async createBuilding(config) {
-    const path = `./Models/Village/gLTF/${config.file}.gltf`;
+    // Try multiple path variations - case sensitivity issues happen on different platforms
+    const pathVariations = [
+      `./Models/Village/gLTF/${config.file}.gltf`,
+      `./Models/Village/GLTF/${config.file}.gltf`,
+      `./Models/Village/gltf/${config.file}.gltf`,
+      `./Models/Village/${config.file}.gltf`
+    ];
+    
+    let gltf = null;
+    let successPath = null;
+    
+    for (const path of pathVariations) {
+      try {
+        gltf = await this.gltfLoader.loadAsync(path);
+        successPath = path;
+        console.log(`[Explore] ✓ Loaded ${config.file} from ${path}`);
+        break;
+      } catch (err) {
+        // Try next path
+      }
+    }
+    
+    if (!gltf) {
+      console.warn(`[Explore] All paths failed for ${config.file}, using placeholder`);
+      this.createPlaceholderBuilding(config);
+      return;
+    }
     
     try {
-      console.log(`[Explore] Loading building: ${config.file}`);
-      const gltf = await this.gltfLoader.loadAsync(path);
       const mesh = gltf.scene;
       
       // Convert materials to MeshBasicMaterial for guaranteed brightness
@@ -284,16 +308,16 @@ export class ExploreMode {
       const center = new THREE.Vector3();
       bbox.getCenter(center);
       
-      // Add collider matching the actual bounding box (rotation already baked in by bbox)
+      // Add collider matching the actual bounding box
       this.addCollider(
         new THREE.Vector3(center.x, 0, center.z),
         new THREE.Vector3(size.x, size.y, size.z),
-        0  // bounding box is already axis-aligned in world space
+        0
       );
       
-      console.log(`[Explore] ${config.file} loaded, size:`, size.toArray());
+      console.log(`[Explore] ${config.file} positioned at`, mesh.position.toArray(), 'size:', size.toArray());
     } catch (err) {
-      console.warn(`[Explore] Failed to load ${config.file}, using placeholder:`, err.message);
+      console.warn(`[Explore] Failed to process ${config.file}:`, err.message);
       this.createPlaceholderBuilding(config);
     }
   }
@@ -643,19 +667,33 @@ export class ExploreMode {
   }
   
   tryInteract() {
+    console.log('=== TRY INTERACT CALLED ===');
+    console.log('nearestNPC:', this.nearestNPC?.type || 'NONE');
+    console.log('defeated:', this.nearestNPC?.defeated);
+    
     if (this.nearestNPC && !this.nearestNPC.defeated) {
-      console.log(`[Explore] Triggering battle with ${this.nearestNPC.type}`);
+      console.log('✓ Conditions met, dispatching startBattle event');
       
       // Hide the interact prompt immediately
       this.hideInteractPrompt();
       
       // Dispatch event to main game controller
-      window.dispatchEvent(new CustomEvent('startBattle', {
+      const event = new CustomEvent('startBattle', {
         detail: {
           animalType: this.nearestNPC.type,
           npc: this.nearestNPC
         }
-      }));
+      });
+      
+      console.log('✓ Event created:', event);
+      console.log('✓ window.modeManager exists?', !!window.modeManager);
+      console.log('✓ window.WORDSLAP_Battle exists?', !!window.WORDSLAP_Battle);
+      console.log('✓ window.WORDSLAP_Battle.startGame exists?', !!(window.WORDSLAP_Battle && window.WORDSLAP_Battle.startGame));
+      
+      window.dispatchEvent(event);
+      console.log('✓ Event dispatched');
+    } else {
+      console.log('✗ Conditions NOT met');
     }
   }
   
