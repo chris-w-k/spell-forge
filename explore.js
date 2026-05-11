@@ -669,38 +669,32 @@ export class ExploreMode {
   
   tryInteract() {
     console.log('=== TRY INTERACT CALLED ===');
+    console.log('nearestNPC:', this.nearestNPC?.type || 'NONE');
+    console.log('defeated:', this.nearestNPC?.defeated);
     
-    // Find nearest NPC right now (don't rely on stored reference)
-    let nearest = null;
-    let nearestDist = Infinity;
-    
-    for (const npc of this.animalNPCs) {
-      if (npc.defeated) continue;
-      const dx = this.playerPos.x - npc.position.x;
-      const dz = this.playerPos.z - npc.position.z;
-      const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist < npc.triggerRadius && dist < nearestDist) {
-        nearestDist = dist;
-        nearest = npc;
-      }
-    }
-    
-    console.log('nearest NPC found:', nearest?.type || 'NONE');
-    
-    if (nearest && nearest.type) {
-      console.log('✓ Triggering battle with', nearest.type);
+    if (this.nearestNPC && !this.nearestNPC.defeated) {
+      console.log('✓ Conditions met, dispatching startBattle event');
+      
+      // Hide the interact prompt immediately
       this.hideInteractPrompt();
       
-      window.dispatchEvent(new CustomEvent('startBattle', {
+      // Dispatch event to main game controller
+      const event = new CustomEvent('startBattle', {
         detail: {
-          animalType: nearest.type,
-          npc: nearest
+          animalType: this.nearestNPC.type,
+          npc: this.nearestNPC
         }
-      }));
+      });
       
+      console.log('✓ Event created:', event);
+      console.log('✓ window.modeManager exists?', !!window.modeManager);
+      console.log('✓ window.WORDSLAP_Battle exists?', !!window.WORDSLAP_Battle);
+      console.log('✓ window.WORDSLAP_Battle.startGame exists?', !!(window.WORDSLAP_Battle && window.WORDSLAP_Battle.startGame));
+      
+      window.dispatchEvent(event);
       console.log('✓ Event dispatched');
     } else {
-      console.log('✗ No NPC in range');
+      console.log('✗ Conditions NOT met');
     }
   }
   
