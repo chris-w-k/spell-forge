@@ -26,6 +26,10 @@ async function bootGame() {
   // Create mode manager
   modeManager = new ModeManager(exploreMode, null);
   
+  // Export to window IMMEDIATELY so game.js can detect explore mode
+  window.modeManager = modeManager;
+  window.exploreMode = exploreMode;
+  
   // Initialize explore mode (builds village, places NPCs)
   console.log('[Main] Building village...');
   await modeManager.init();

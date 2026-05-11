@@ -806,6 +806,9 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('keydown',e=>{
+  // Skip if in explore mode (let explore.js handle keys)
+  if(window.modeManager && window.modeManager.currentMode === 'explore') return;
+  
   if(S.phase==='title'){
     if(e.key==='Enter'||e.key===' '){
       e.preventDefault();

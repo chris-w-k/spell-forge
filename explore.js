@@ -163,14 +163,24 @@ export class ExploreMode {
   }
   
   setupControls() {
-    // Keyboard
-    window.addEventListener('keydown', (e) => {
+    // Keyboard - listen on document to capture all keypresses
+    document.addEventListener('keydown', (e) => {
       this.keys[e.key.toLowerCase()] = true;
       
       // Space for interaction (trigger battles)
       if (e.key === ' ') {
-        console.log('[Explore] SPACE pressed, nearestNPC:', this.nearestNPC?.type || 'none');
+        console.log('[Explore] SPACE pressed. nearestNPC:', this.nearestNPC?.type || 'NONE');
+        console.log('[Explore] Total NPCs:', this.animalNPCs.length);
+        console.log('[Explore] Player position:', this.playerPos.toArray());
+        // Log distance to all NPCs to see if any are close
+        this.animalNPCs.forEach(npc => {
+          const dx = this.playerPos.x - npc.position.x;
+          const dz = this.playerPos.z - npc.position.z;
+          const dist = Math.sqrt(dx*dx + dz*dz);
+          console.log(`[Explore]  - ${npc.type} at`, npc.position.toArray(), 'dist:', dist.toFixed(2), 'triggerRadius:', npc.triggerRadius);
+        });
         this.tryInteract();
+        e.preventDefault();  // Prevent button activation
       }
       
       // ESC for pause
@@ -179,12 +189,19 @@ export class ExploreMode {
       }
     });
     
-    window.addEventListener('keyup', (e) => {
+    document.addEventListener('keyup', (e) => {
       this.keys[e.key.toLowerCase()] = false;
     });
     
-    // Mouse look (optional - can enable later)
-    // For now, just arrow keys for rotation
+    // Refocus to body when clicking canvas (prevents button focus stealing SPACE)
+    document.addEventListener('click', (e) => {
+      if (e.target.tagName === 'CANVAS') {
+        document.body.focus();
+        if (document.activeElement && document.activeElement.blur) {
+          document.activeElement.blur();
+        }
+      }
+    });
   }
   
   async loadModel(path) {
@@ -424,7 +441,7 @@ export class ExploreMode {
         mixer: mixer,
         defeated: false,
         state: 'idle',
-        triggerRadius: 4.0,
+        triggerRadius: 5.0,
         idleRotation: Math.random() * Math.PI * 2,
         idleTimer: 0
       };
@@ -448,7 +465,7 @@ export class ExploreMode {
         mixer: null,
         defeated: false,
         state: 'idle',
-        triggerRadius: 4.0,
+        triggerRadius: 5.0,
         idleRotation: Math.random() * Math.PI * 2,
         idleTimer: 0
       });
