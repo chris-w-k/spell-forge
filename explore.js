@@ -244,12 +244,13 @@ export class ExploreMode {
   }
   
   async createBuilding(config) {
-    // Try multiple path variations - case sensitivity issues happen on different platforms
+    // Try multiple path variations and extensions
     const pathVariations = [
+      `./Models/Village/${config.file}.glb`,
+      `./Models/Village/${config.file}.gltf`,
       `./Models/Village/gLTF/${config.file}.gltf`,
       `./Models/Village/GLTF/${config.file}.gltf`,
-      `./Models/Village/gltf/${config.file}.gltf`,
-      `./Models/Village/${config.file}.gltf`
+      `./Models/Village/gltf/${config.file}.gltf`
     ];
     
     let gltf = null;
