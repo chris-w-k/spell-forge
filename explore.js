@@ -76,9 +76,9 @@ export class ExploreMode {
     console.log('[Explore] Creating camera and renderer...');
     
     this.camera = new THREE.PerspectiveCamera(60, w/h, 0.1, 1000);
-    this.camera.position.set(0, 1.7, 22);  // Pulled back for bigger buildings
-    this.camera.lookAt(0, 0, 0);  // Look at village center
-    this.playerPos.set(0, 1.7, 22);
+    this.camera.position.set(0, 1.7, 28);  // Well clear of all trees/buildings
+    this.camera.lookAt(0, 0, 0);
+    this.playerPos.set(0, 1.7, 28);
     this.playerRot = Math.PI;
     
     // Renderer
@@ -244,98 +244,75 @@ export class ExploreMode {
   }
   
   async createBuilding(config) {
-    // Try multiple path variations and extensions
-    const pathVariations = [
-      `./Models/Village/${config.file}.glb`,
-      `./Models/Village/${config.file}.gltf`,
-      `./Models/Village/gLTF/${config.file}.gltf`,
-      `./Models/Village/GLTF/${config.file}.gltf`,
-      `./Models/Village/gltf/${config.file}.gltf`
-    ];
-    
-    let gltf = null;
-    let successPath = null;
-    
-    for (const path of pathVariations) {
-      try {
-        gltf = await this.gltfLoader.loadAsync(path);
-        successPath = path;
-        console.log(`[Explore] ✓ Loaded ${config.file} from ${path}`);
-        break;
-      } catch (err) {
-        // Try next path
-      }
-    }
-    
-    if (!gltf) {
-      console.warn(`[Explore] All paths failed for ${config.file}, using placeholder`);
-      this.createPlaceholderBuilding(config);
-      return;
-    }
-    
-    try {
-      const mesh = gltf.scene;
-      
-      // Convert materials to MeshBasicMaterial for guaranteed brightness
-      mesh.traverse(child => {
-        if (child.isMesh && child.material) {
-          const oldMat = Array.isArray(child.material) ? child.material[0] : child.material;
-          
-          if (oldMat.map) {
-            child.material = new THREE.MeshBasicMaterial({
-              map: oldMat.map,
-              color: 0xffffff
-            });
-          } else {
-            const color = oldMat.color || new THREE.Color(0xcccccc);
-            child.material = new THREE.MeshBasicMaterial({color: color});
-          }
-        }
-      });
-      
-      // Position, rotate, scale
-      mesh.position.set(config.pos.x, 0, config.pos.z);
-      mesh.rotation.y = config.rot;
-      mesh.scale.setScalar(config.scale);
-      mesh.userData.name = config.file;
-      
-      this.scene.add(mesh);
-      this.buildings.push(mesh);
-      
-      // Compute bounding box for collision after scale/position is set
-      const bbox = new THREE.Box3().setFromObject(mesh);
-      const size = new THREE.Vector3();
-      bbox.getSize(size);
-      const center = new THREE.Vector3();
-      bbox.getCenter(center);
-      
-      // Add collider matching the actual bounding box
-      this.addCollider(
-        new THREE.Vector3(center.x, 0, center.z),
-        new THREE.Vector3(size.x, size.y, size.z),
-        0
-      );
-      
-      console.log(`[Explore] ${config.file} positioned at`, mesh.position.toArray(), 'size:', size.toArray());
-    } catch (err) {
-      console.warn(`[Explore] Failed to process ${config.file}:`, err.message);
-      this.createPlaceholderBuilding(config);
-    }
+    // Using placeholder buildings for now (GLB files pending)
+    this.createPlaceholderBuilding(config);
   }
   
   createPlaceholderBuilding(config) {
-    // Fallback colored box if GLTF fails
+    // Build a nicer placeholder with walls + sloped roof
     const fb = config.fallback;
-    const geo = new THREE.BoxGeometry(fb.size.x, fb.size.y, fb.size.z);
-    const mat = new THREE.MeshBasicMaterial({color: fb.color});
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(config.pos.x, fb.size.y / 2, config.pos.z);
-    mesh.rotation.y = config.rot;
-    mesh.userData.name = config.file;
+    const group = new THREE.Group();
     
-    this.scene.add(mesh);
-    this.buildings.push(mesh);
+    // Main walls
+    const wallGeo = new THREE.BoxGeometry(fb.size.x, fb.size.y, fb.size.z);
+    const wallMat = new THREE.MeshBasicMaterial({color: fb.color});
+    const walls = new THREE.Mesh(wallGeo, wallMat);
+    walls.position.y = fb.size.y / 2;
+    group.add(walls);
     
+    // Roof (darker shade) - cone for towers, pyramid/prism for buildings
+    const isRound = config.file === 'Bell_Tower';
+    if (isRound) {
+      // Cone roof for tower
+      const roofGeo = new THREE.ConeGeometry(fb.size.x * 0.7, fb.size.y * 0.4, 4);
+      const roofMat = new THREE.MeshBasicMaterial({color: 0x4a2c1a});
+      const roof = new THREE.Mesh(roofGeo, roofMat);
+      roof.position.y = fb.size.y + (fb.size.y * 0.2);
+      roof.rotation.y = Math.PI / 4;
+      group.add(roof);
+    } else {
+      // Pyramid roof for regular buildings
+      const roofHeight = fb.size.y * 0.5;
+      const roofGeo = new THREE.ConeGeometry(
+        Math.sqrt(fb.size.x * fb.size.x + fb.size.z * fb.size.z) / 1.8,
+        roofHeight,
+        4
+      );
+      const roofMat = new THREE.MeshBasicMaterial({color: 0x4a2c1a});
+      const roof = new THREE.Mesh(roofGeo, roofMat);
+      roof.position.y = fb.size.y + roofHeight / 2;
+      roof.rotation.y = Math.PI / 4;
+      group.add(roof);
+    }
+    
+    // Door
+    const doorGeo = new THREE.BoxGeometry(fb.size.x * 0.2, fb.size.y * 0.45, 0.1);
+    const doorMat = new THREE.MeshBasicMaterial({color: 0x3a1f0a});
+    const door = new THREE.Mesh(doorGeo, doorMat);
+    door.position.set(0, fb.size.y * 0.225, fb.size.z / 2 + 0.05);
+    group.add(door);
+    
+    // Two windows on the front
+    const windowGeo = new THREE.BoxGeometry(fb.size.x * 0.15, fb.size.y * 0.2, 0.05);
+    const windowMat = new THREE.MeshBasicMaterial({color: 0xffe4a8});
+    
+    const window1 = new THREE.Mesh(windowGeo, windowMat);
+    window1.position.set(-fb.size.x * 0.3, fb.size.y * 0.7, fb.size.z / 2 + 0.05);
+    group.add(window1);
+    
+    const window2 = new THREE.Mesh(windowGeo, windowMat);
+    window2.position.set(fb.size.x * 0.3, fb.size.y * 0.7, fb.size.z / 2 + 0.05);
+    group.add(window2);
+    
+    // Position and rotate the whole building
+    group.position.set(config.pos.x, 0, config.pos.z);
+    group.rotation.y = config.rot;
+    group.userData.name = config.file;
+    
+    this.scene.add(group);
+    this.buildings.push(group);
+    
+    // Collision matches just the wall box
     this.addCollider(
       new THREE.Vector3(config.pos.x, 0, config.pos.z),
       new THREE.Vector3(fb.size.x, fb.size.y, fb.size.z),
@@ -350,11 +327,11 @@ export class ExploreMode {
     const foliageGeo = new THREE.SphereGeometry(2, 8, 8);
     const foliageMat = new THREE.MeshBasicMaterial({color: 0x228b22});
     
+    // Trees around perimeter - keep clear of spawn area (z > 22)
     const treePositions = [
-      {x: -18, z: -10}, {x: -18, z: 0}, {x: -18, z: 10},
-      {x: 18, z: -10}, {x: 18, z: 0}, {x: 18, z: 10},
-      {x: -10, z: -18}, {x: 0, z: -20}, {x: 10, z: -18},
-      {x: -10, z: 18}, {x: 0, z: 20}, {x: 10, z: 18}
+      {x: -22, z: -12}, {x: -22, z: 0}, {x: -22, z: 8},
+      {x: 22, z: -12}, {x: 22, z: 0}, {x: 22, z: 8},
+      {x: -12, z: -22}, {x: 0, z: -24}, {x: 12, z: -22}
     ];
     
     for (const pos of treePositions) {
@@ -382,21 +359,20 @@ export class ExploreMode {
   async placeAnimalNPCs() {
     console.log('[Explore] Placing animal NPCs...');
     
-    // 12 animals distributed around village
-    // Each animal associated with a building/area
+    // 12 animals spread across village - no two too close
     const animalPlacements = [
-      {type: 'Bull',        pos: {x: 10,  z: -6},  area: 'Barn'},
-      {type: 'Cow',         pos: {x: 7,   z: -10}, area: 'Barn'},
-      {type: 'Horse',       pos: {x: 9,   z: -4},  area: 'Barn'},
-      {type: 'Donkey',      pos: {x: -6,  z: -6},  area: 'Tavern'},
-      {type: 'Wolf',        pos: {x: -16, z: 8},   area: 'Forest'},
-      {type: 'Fox',         pos: {x: -14, z: -8},  area: 'Forest'},
-      {type: 'Deer',        pos: {x: 16,  z: 10},  area: 'Forest'},
-      {type: 'Stag',        pos: {x: 14,  z: -10}, area: 'Forest'},
-      {type: 'Husky',       pos: {x: -10, z: 6},   area: 'House'},
-      {type: 'Shibalnu',    pos: {x: 10,  z: 6},   area: 'House'},
-      {type: 'Alpaca',      pos: {x: -2,  z: 2},   area: 'Village Center'},
-      {type: 'Horse_White', pos: {x: 2,   z: -2},  area: 'Village Center'}
+      {type: 'Bull',        pos: {x: 0,   z: 12},  area: 'Plaza'},
+      {type: 'Cow',         pos: {x: 14,  z: 14},  area: 'East Plaza'},
+      {type: 'Horse',       pos: {x: -14, z: 14},  area: 'West Plaza'},
+      {type: 'Donkey',      pos: {x: -6,  z: 16},  area: 'West Path'},
+      {type: 'Wolf',        pos: {x: 18,  z: -4},  area: 'East Edge'},
+      {type: 'Fox',         pos: {x: -18, z: -4},  area: 'West Edge'},
+      {type: 'Deer',        pos: {x: 6,   z: 16},  area: 'East Path'},
+      {type: 'Stag',        pos: {x: 14,  z: -6},  area: 'East Field'},
+      {type: 'Husky',       pos: {x: -14, z: -6},  area: 'West Field'},
+      {type: 'Shibalnu',    pos: {x: 0,   z: -8},  area: 'Center'},
+      {type: 'Alpaca',      pos: {x: 8,   z: 4},   area: 'East Center'},
+      {type: 'Horse_White', pos: {x: -8,  z: 4},   area: 'West Center'}
     ];
     
     for (const placement of animalPlacements) {
@@ -561,22 +537,36 @@ export class ExploreMode {
       moveDir.normalize();
       
       // Forward direction relative to player rotation
-      // playerRot=0 means looking down -Z axis
-      // playerRot=PI means looking down +Z axis (toward village)
       const forward = new THREE.Vector3(
         -Math.sin(this.playerRot),
         0,
         -Math.cos(this.playerRot)
       );
       
-      // Calculate new position
-      const newPos = this.playerPos.clone();
-      newPos.x += forward.x * moveDir.z * this.moveSpeed * dt;
-      newPos.z += forward.z * moveDir.z * this.moveSpeed * dt;
+      // Calculate desired movement
+      const moveX = forward.x * moveDir.z * this.moveSpeed * dt;
+      const moveZ = forward.z * moveDir.z * this.moveSpeed * dt;
       
-      // Check collision
-      if (!this.checkCollision(newPos)) {
-        this.playerPos.copy(newPos);
+      // Check if player is currently stuck in a collider
+      const currentlyStuck = this.checkCollision(this.playerPos);
+      
+      if (currentlyStuck) {
+        // If stuck, allow movement freely (let player escape)
+        this.playerPos.x += moveX;
+        this.playerPos.z += moveZ;
+      } else {
+        // Try X and Z movement separately for wall-sliding
+        const newPosX = this.playerPos.clone();
+        newPosX.x += moveX;
+        if (!this.checkCollision(newPosX)) {
+          this.playerPos.x = newPosX.x;
+        }
+        
+        const newPosZ = this.playerPos.clone();
+        newPosZ.z += moveZ;
+        if (!this.checkCollision(newPosZ)) {
+          this.playerPos.z = newPosZ.z;
+        }
       }
     }
     
@@ -669,32 +659,38 @@ export class ExploreMode {
   
   tryInteract() {
     console.log('=== TRY INTERACT CALLED ===');
-    console.log('nearestNPC:', this.nearestNPC?.type || 'NONE');
-    console.log('defeated:', this.nearestNPC?.defeated);
     
-    if (this.nearestNPC && !this.nearestNPC.defeated) {
-      console.log('✓ Conditions met, dispatching startBattle event');
-      
-      // Hide the interact prompt immediately
+    // Find nearest NPC right now (don't rely on stored reference)
+    let nearest = null;
+    let nearestDist = Infinity;
+    
+    for (const npc of this.animalNPCs) {
+      if (npc.defeated) continue;
+      const dx = this.playerPos.x - npc.position.x;
+      const dz = this.playerPos.z - npc.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < npc.triggerRadius && dist < nearestDist) {
+        nearestDist = dist;
+        nearest = npc;
+      }
+    }
+    
+    console.log('nearest NPC found:', nearest?.type || 'NONE');
+    
+    if (nearest && nearest.type) {
+      console.log('✓ Triggering battle with', nearest.type);
       this.hideInteractPrompt();
       
-      // Dispatch event to main game controller
-      const event = new CustomEvent('startBattle', {
+      window.dispatchEvent(new CustomEvent('startBattle', {
         detail: {
-          animalType: this.nearestNPC.type,
-          npc: this.nearestNPC
+          animalType: nearest.type,
+          npc: nearest
         }
-      });
+      }));
       
-      console.log('✓ Event created:', event);
-      console.log('✓ window.modeManager exists?', !!window.modeManager);
-      console.log('✓ window.WORDSLAP_Battle exists?', !!window.WORDSLAP_Battle);
-      console.log('✓ window.WORDSLAP_Battle.startGame exists?', !!(window.WORDSLAP_Battle && window.WORDSLAP_Battle.startGame));
-      
-      window.dispatchEvent(event);
       console.log('✓ Event dispatched');
     } else {
-      console.log('✗ Conditions NOT met');
+      console.log('✗ No NPC in range');
     }
   }
   
