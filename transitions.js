@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 // ══════════ MODE MANAGER - Explore ↔ Battle Transitions ══════════
 
 export class ModeManager {
@@ -264,7 +266,7 @@ export class ModeManager {
       this.showTransitionScreen('defeat', () => {
         // Respawn at village entrance
         this.explore.setPlayerState({
-          position: new THREE.Vector3(0, 1.7, 15),
+          position: new THREE.Vector3(0, 1.7, 22),
           rotation: Math.PI
         });
         

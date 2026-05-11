@@ -76,9 +76,9 @@ export class ExploreMode {
     console.log('[Explore] Creating camera and renderer...');
     
     this.camera = new THREE.PerspectiveCamera(60, w/h, 0.1, 1000);
-    this.camera.position.set(0, 1.7, 15);
-    this.camera.lookAt(0, 0, 0);
-    this.playerPos.set(0, 1.7, 15);
+    this.camera.position.set(0, 1.7, 22);  // Pulled back for bigger buildings
+    this.camera.lookAt(0, 0, 0);  // Look at village center
+    this.playerPos.set(0, 1.7, 22);
     this.playerRot = Math.PI;
     
     // Renderer
@@ -203,49 +203,100 @@ export class ExploreMode {
   async buildVillage() {
     console.log('[Explore] Building village...');
     
-    // For now, create placeholder buildings as colored boxes
-    // Later we'll replace with actual GLTF models from medieval pack
-    
-    // Village layout (8 buildings in a rough circle around center)
-    const buildingPositions = [
-      {name: 'Tavern',     pos: {x: -8,  z: -8}, rot: Math.PI/4,   size: {x:6, y:4, z:8},  color: 0xc97a3f},
-      {name: 'Barn',       pos: {x: 8,   z: -8}, rot: -Math.PI/4,  size: {x:10,y:6, z:10}, color: 0xd4502a},
-      {name: 'Church',     pos: {x: 0,   z: -15},rot: 0,           size: {x:8, y:10,z:12}, color: 0xf0f0f0},
-      {name: 'Blacksmith', pos: {x: -12, z: 0},  rot: Math.PI/2,   size: {x:5, y:4, z:6},  color: 0x808080},
-      {name: 'House_1',    pos: {x: 12,  z: 0},  rot: -Math.PI/2,  size: {x:6, y:5, z:6},  color: 0xff8c42},
-      {name: 'House_2',    pos: {x: -8,  z: 8},  rot: 3*Math.PI/4, size: {x:6, y:5, z:6},  color: 0xffa756},
-      {name: 'Shop',       pos: {x: 8,   z: 8},  rot: -3*Math.PI/4,size: {x:5, y:4, z:7},  color: 0xffd700},
-      {name: 'Well',       pos: {x: 0,   z: 0},  rot: 0,           size: {x:2, y:3, z:2},  color: 0xa0a0a0}
+    // Village layout: 8 buildings around a central plaza
+    // Each entry: name (GLTF file), position, rotation, scale, and fallback color/size if GLTF fails
+    const buildingPlacements = [
+      {file: 'Inn',        pos: {x: -10, z: -10}, rot: Math.PI/4,    scale: 2.0, fallback: {color: 0xc97a3f, size: {x:6, y:5, z:8}}},
+      {file: 'Stable',     pos: {x: 10,  z: -10}, rot: -Math.PI/4,   scale: 2.2, fallback: {color: 0xd4502a, size: {x:10,y:5, z:10}}},
+      {file: 'Bell_Tower', pos: {x: 0,   z: -16}, rot: 0,            scale: 2.0, fallback: {color: 0xf0f0f0, size: {x:5, y:12,z:5}}},
+      {file: 'Blacksmith', pos: {x: -14, z: 2},   rot: Math.PI/2,    scale: 2.0, fallback: {color: 0x808080, size: {x:6, y:5, z:7}}},
+      {file: 'House_1',    pos: {x: 14,  z: 2},   rot: -Math.PI/2,   scale: 2.0, fallback: {color: 0xff8c42, size: {x:6, y:5, z:6}}},
+      {file: 'House_2',    pos: {x: -10, z: 10},  rot: 3*Math.PI/4,  scale: 2.0, fallback: {color: 0xffa756, size: {x:6, y:5, z:6}}},
+      {file: 'House_3',    pos: {x: 10,  z: 10},  rot: -3*Math.PI/4, scale: 2.0, fallback: {color: 0xffd700, size: {x:6, y:5, z:6}}},
+      {file: 'Mill',       pos: {x: 16,  z: -16}, rot: Math.PI/6,    scale: 2.0, fallback: {color: 0xa0a0a0, size: {x:6, y:8, z:6}}}
     ];
     
-    for (const bld of buildingPositions) {
+    for (const bld of buildingPlacements) {
       await this.createBuilding(bld);
     }
     
-    // Add some trees around the perimeter
+    // Add trees around the perimeter
     await this.addTrees();
     
     console.log('[Explore] Village built!');
   }
   
   async createBuilding(config) {
-    // Use MeshBasicMaterial - no lighting needed, always full brightness
-    const geo = new THREE.BoxGeometry(config.size.x, config.size.y, config.size.z);
-    const mat = new THREE.MeshBasicMaterial({
-      color: config.color
-    });
+    const path = `./Models/Village/${config.file}.gltf`;
+    
+    try {
+      console.log(`[Explore] Loading building: ${config.file}`);
+      const gltf = await this.gltfLoader.loadAsync(path);
+      const mesh = gltf.scene;
+      
+      // Convert materials to MeshBasicMaterial for guaranteed brightness
+      mesh.traverse(child => {
+        if (child.isMesh && child.material) {
+          const oldMat = Array.isArray(child.material) ? child.material[0] : child.material;
+          
+          if (oldMat.map) {
+            child.material = new THREE.MeshBasicMaterial({
+              map: oldMat.map,
+              color: 0xffffff
+            });
+          } else {
+            const color = oldMat.color || new THREE.Color(0xcccccc);
+            child.material = new THREE.MeshBasicMaterial({color: color});
+          }
+        }
+      });
+      
+      // Position, rotate, scale
+      mesh.position.set(config.pos.x, 0, config.pos.z);
+      mesh.rotation.y = config.rot;
+      mesh.scale.setScalar(config.scale);
+      mesh.userData.name = config.file;
+      
+      this.scene.add(mesh);
+      this.buildings.push(mesh);
+      
+      // Compute bounding box for collision after scale/position is set
+      const bbox = new THREE.Box3().setFromObject(mesh);
+      const size = new THREE.Vector3();
+      bbox.getSize(size);
+      const center = new THREE.Vector3();
+      bbox.getCenter(center);
+      
+      // Add collider matching the actual bounding box (rotation already baked in by bbox)
+      this.addCollider(
+        new THREE.Vector3(center.x, 0, center.z),
+        new THREE.Vector3(size.x, size.y, size.z),
+        0  // bounding box is already axis-aligned in world space
+      );
+      
+      console.log(`[Explore] ${config.file} loaded, size:`, size.toArray());
+    } catch (err) {
+      console.warn(`[Explore] Failed to load ${config.file}, using placeholder:`, err.message);
+      this.createPlaceholderBuilding(config);
+    }
+  }
+  
+  createPlaceholderBuilding(config) {
+    // Fallback colored box if GLTF fails
+    const fb = config.fallback;
+    const geo = new THREE.BoxGeometry(fb.size.x, fb.size.y, fb.size.z);
+    const mat = new THREE.MeshBasicMaterial({color: fb.color});
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(config.pos.x, config.size.y / 2, config.pos.z);
+    mesh.position.set(config.pos.x, fb.size.y / 2, config.pos.z);
     mesh.rotation.y = config.rot;
-    mesh.userData.name = config.name;
+    mesh.userData.name = config.file;
     
     this.scene.add(mesh);
     this.buildings.push(mesh);
     
-    // Add collider (AABB)
     this.addCollider(
       new THREE.Vector3(config.pos.x, 0, config.pos.z),
-      new THREE.Vector3(config.size.x, config.size.y, config.size.z),
+      new THREE.Vector3(fb.size.x, fb.size.y, fb.size.z),
       config.rot
     );
   }
