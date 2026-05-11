@@ -244,7 +244,7 @@ export class ExploreMode {
   }
   
   async createBuilding(config) {
-    const path = `./Models/Village/${config.file}.gltf`;
+    const path = `./Models/Village/gLTF/${config.file}.gltf`;
     
     try {
       console.log(`[Explore] Loading building: ${config.file}`);
@@ -569,6 +569,8 @@ export class ExploreMode {
   updateNPCs(dt) {
     let nearestNPC = null;
     let nearestDist = Infinity;
+    let absNearestNPC = null;
+    let absNearestDist = Infinity;
     
     for (const npc of this.animalNPCs) {
       if (npc.defeated) {
@@ -580,6 +582,12 @@ export class ExploreMode {
       const dx = this.playerPos.x - npc.position.x;
       const dz = this.playerPos.z - npc.position.z;
       const dist = Math.sqrt(dx * dx + dz * dz);
+      
+      // Track absolute nearest (for debug)
+      if (dist < absNearestDist) {
+        absNearestDist = dist;
+        absNearestNPC = npc;
+      }
       
       if (dist < npc.triggerRadius) {
         npc.state = 'alert';
@@ -606,6 +614,11 @@ export class ExploreMode {
     if (nearestNPC) {
       this.showInteractPrompt(nearestNPC);
     } else {
+      // Show distance to nearest animal in debug HUD even when not in range
+      const debugEl = document.getElementById('hud-debug');
+      if (debugEl && absNearestNPC) {
+        debugEl.textContent = `Nearest: ${absNearestNPC.type} (${absNearestDist.toFixed(1)}m)`;
+      }
       this.hideInteractPrompt();
     }
   }
